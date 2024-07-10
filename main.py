@@ -14,10 +14,11 @@ Vector = Tuple[float, float, float]
 
 
 def along_background_field(vector_array, vector):
-    Incl_m, Decl_m = vector
-    return np.cos(Incl_m) * np.cos(Decl_m) * vector_array[:, 0] + np.cos(Incl_m) * np.sin(Decl_m) * vector_array[:,
-                                                                                                    1] + np.sin(
-        Incl_m) * vector_array[:, 2]
+    x, y = vector
+    return (np.cos(x) * np.cos(y) * vector_array[:, 0]
+            + np.cos(x) * np.sin(y) * vector_array[:, 1]
+            + np.sin(x) * vector_array[:, 2]
+            )
 
 
 def get_mag_field(lat, lon):
@@ -30,6 +31,7 @@ def get_mag_field(lat, lon):
     dec = a['field-value']['declination']['value']  # declination of the Earth's magnetic field in this location
     inc = a['field-value']['inclination']['value']  # inclination of the Earth's magnetic field in this location
     return dec, inc
+
 
 def create_custom_colormap():
     # Define the colors and their positions
@@ -78,7 +80,8 @@ def main():
     ) * 1E9
 
     field = along_background_field(B, (inc, dec)).reshape(xv.shape)
-    im = ax2.imshow(field, extent=(survey_points[0], survey_points[-1], survey_points[0], survey_points[-1]), cmap='turbo')
+    im = ax2.imshow(field, extent=(survey_points[0], survey_points[-1], survey_points[0], survey_points[-1]),
+                    cmap='turbo')
     ax2.axhline(0, color='red', linestyle='--')
     clb = fig.colorbar(im)
     clb.ax.set_ylabel('nT', fontsize=10, rotation=270)
