@@ -6,7 +6,7 @@ import magnetic_field_calculator
 import numpy as np
 from numpy import ndarray
 from dateutil.utils import today
-from magnetic_field_calculator import MagneticFieldCalculator  # Earth's inducing field from the UK geological survey
+from magnetic_field_calculator import MagneticFieldCalculator
 
 
 def custom_round(x, base=1):
@@ -15,7 +15,11 @@ def custom_round(x, base=1):
 
 @dataclass
 class EarthsInducingField:
-    inclination: float  # radians, Positive is upward
+    """
+    Earth's inducing field from the UK geological survey
+    Directions defined here: https://intermagnet.org/faq/10.geomagnetic-comp
+    """
+    inclination: float  # radians, Positive is downward
     declination: float  # radians, Clockwise from geographic North
     strength: float  # nT
 
@@ -27,7 +31,7 @@ class EarthsInducingField:
 
     def __str__(self):
         return (f"Field strength {self.strength:.3f} nT\n"
-                f"inclination {np.rad2deg(self.inclination):.3f}° (Positive is upward)\n"
+                f"inclination {np.rad2deg(self.inclination):.3f}° (Positive is downward)\n"
                 f"declination {np.rad2deg(self.declination):.3f}° (Clockwise from geographic North)")
 
     @classmethod
@@ -88,6 +92,8 @@ def spher2cart(inclination, declination, geographic=True, degrees=False):
     geographic system = True: declination is angle clockwise from geographic North.
     if False, declination is counterclockwise from X axis (mathematical definition).
     If degrees = False, radians are assumed
+
+    return 3-dimensional unit vector
     """
     if degrees:
         inclination = np.deg2rad(inclination)
@@ -95,22 +101,22 @@ def spher2cart(inclination, declination, geographic=True, degrees=False):
     if geographic:
         a = np.cos(inclination) * np.sin(declination)
         b = np.cos(inclination) * np.cos(declination)
-        c = np.sin(inclination)
+        c = -np.sin(inclination)
         return a, b, c
     else:
         a = np.cos(inclination) * np.cos(declination)
         b = np.cos(inclination) * np.sin(declination)
-        c = np.sin(inclination)
+        c = -np.sin(inclination)
         return a, b, c
 
 
 def cart2spher(a, b, c, geographic=True, degrees=False):
     magnitude = ((a ** 2 + b ** 2 + c ** 2) ** (1 / 2))
     if geographic:
-        inc = np.arcsin(c / magnitude)
+        inc = np.arcsin(-c / magnitude)
         dec = np.arctan2(a, b)
     else:
-        inc = np.arcsin(c / magnitude)
+        inc = np.arcsin(-c / magnitude)
         dec = np.arctan2(b, a)
     if degrees:
         inc = np.rad2deg(inc)

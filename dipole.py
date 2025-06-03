@@ -8,7 +8,6 @@ from earths_field import spher2cart
 
 PI4 = 4 * np.pi
 mu0 = 4e-7 * np.pi  # vacuum magnetic permeability
-deg2rad = np.pi / 180
 t2nt = 1e9
 
 
@@ -25,6 +24,15 @@ class Dipole:
     """
     position: ndarray[3]
     moment: ndarray[3]
+
+    def __str__(self):
+        return (f"Position (XYZ): {self.x:.2f}, {self.y:.2f}, {self.z:.2f}\n"
+                f"Magnetic moment magnitude {self.get_magnitude():.3g}\n"
+                f"Inclination {self.get_inclination():.1f}� (Positive is downward)\n"
+                f"Declination {self.get_declination():.1f}� (Clockwise from geographic North)")
+
+    def is_valid(self):
+        return ~np.any(np.isnan(np.hstack([self.position, self.moment])))
 
     @property
     def xy(self):
@@ -52,22 +60,14 @@ class Dipole:
         return np.rad2deg(np.arctan2(self.moment[0], self.moment[1]))
 
     def get_inclination(self):
-        """Positive is upward"""
+        """Positive is downward"""
         magnitude = self.get_magnitude()
         if magnitude == 0:
             return 0
-        return np.rad2deg((np.arcsin(self.moment[2] / magnitude)))
+        return np.rad2deg((np.arcsin(-self.moment[2] / magnitude)))
 
     def get_spherical_moment(self):
         return self.get_magnitude(), self.get_inclination(), self.get_declination()
-
-    @classmethod
-    def nan(cls):
-        return cls(position=np.full(3, np.nan), moment=np.full(3, np.nan))
-
-    @classmethod
-    def from_magpylib(cls, dipole):
-        return cls(moment=dipole.moment, position=dipole.position)
 
     @classmethod
     def from_spherical_moment(cls, position: ndarray, spherical_moment: ndarray) -> Self:
@@ -81,12 +81,12 @@ class Dipole:
         spherical_moment: ndarray
             Moment in spherical coordinates [magnitude, inclination, declination]
             where inclination and declination are in degrees.
+            Inclination: positive downward
             Declination geographic definition: Clockwise from geographic North
 
         Returns:
         --------
         CartesianDipole
-            New instance with converted cartesian moment
         """
 
         magnitude = spherical_moment[0]
@@ -107,8 +107,8 @@ class Dipole:
     @staticmethod
     def along_inc_dec(field, inc: float, dec: float, degrees: bool = False):
         if degrees:
-            inc = inc * deg2rad
-            dec = dec * deg2rad
+            inc = np.deg2rad(inc)
+            dec = np.deg2rad(dec)
 
         # bx, by, bz = field
         # a, b, c = spher2cart(inc, dec)
@@ -131,7 +131,7 @@ class Dipole:
         inc : float
             Inclination
         dec : float
-            Declination anticlockwise from easting-axis
+            Declination
         degrees : bool
             Toggle for inclination declination unit: radians <-> degrees
 
@@ -186,7 +186,10 @@ def induced_field(sources: Iterable[Dipole], coords, inc, dec, degrees=False):
     sources = list(sources)
     if len(sources) == 0:
         return np.zeros(coords.shape[0])
-    calculated_field = [source.induced_field(coords, inc, dec, degrees) for source in sources]
+    # precomputing the cartesian vector
+    vector = np.array(spher2cart(inc, dec, degrees=degrees))
+    calculated_field = [source.induced_field_along_vector(coords, vector, degrees) for source in sources]
+    # calculated_field = [source.induced_field(coords, inc, dec, degrees) for source in sources]
     return np.sum(np.array(calculated_field), axis=0)
 
 

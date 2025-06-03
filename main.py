@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import FancyArrow
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from dipole import Dipole
@@ -23,24 +25,24 @@ def create_oasis_cmap() -> LinearSegmentedColormap:
 
 
 def add_north_arrow(ax):
-    py = 0.8 * ax.figure.bbox.height
-    px = 0.05 * ax.figure.bbox.width
+    py = 0.8
+    px = 0.92
 
     # Draw an arrow with a text "N" above it using annotation
-    ax.annotate("N", xy=(px, py), fontsize=15, xycoords="figure pixels", ha='center')
-    ax.annotate("", xy=(px, py), xytext=(px, py - 80), xycoords="figure pixels",
+    ax.annotate("N", xy=(px, py), fontsize=15, xycoords="axes fraction", ha='center')
+    ax.annotate("", xy=(px, py), xytext=(px, py - 0.07), xycoords="axes fraction",
                 arrowprops=dict(arrowstyle="-|>", facecolor="black"))
 
 
 def main():
-    st.title("Magnetic Anomaly Visualizer")
+    st.title("3-D Magnetic dipole anomaly Visualizer")
     # alt, lat, long, magnitude, direction = get_input()
     alt, earth, m_magnitude, m_inc, m_dec = get_input()
     dipole = Dipole.from_spherical_moment(
         position=np.array([0, 0, 0]),
         spherical_moment=np.array([m_magnitude, m_inc, m_dec]))
 
-    map_fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    ax, map_fig = create_fig()
 
     n = 100
     xmin = -10
@@ -75,9 +77,10 @@ def main():
     # clb.ax.set_ylabel('nT', fontsize=10, rotation=270)
     xy = 0.1 + np.sin(earth.declination) * 0.08, 0.1 + np.cos(earth.declination) * 0.08
     ax.annotate(f"", xytext=(0.1, 0.1), xy=xy, xycoords='axes fraction', textcoords='axes fraction',
-                arrowprops=dict(arrowstyle="->"))
-    ax.annotate(f"Earth\ndeclination {earth.dec_deg():.1f}°\ninclination: {earth.inc_deg():.1f}°", (0.02, 0.02), xycoords='axes fraction')
-
+                arrowprops=dict(arrowstyle="->"), label='Mag moment')
+    ax.annotate(f"Earth field\nDec {earth.dec_deg():.1f}°\nInc: {earth.inc_deg():.1f}°", (0.02, 0.02),
+                xycoords='axes fraction')
+    ax.scatter(0, 0, marker='x', zorder=10, label="Anomaly position", s=80)
     ax.set_aspect('equal')
     cax = inset_axes(ax, width="5%", height="30%", loc='lower left',
                      bbox_to_anchor=(1.02, 0.02, 1, 1), bbox_transform=ax.transAxes,
@@ -90,24 +93,45 @@ def main():
     xy2 = dipole.position[0] + np.sin(decl) * arrow_size, dipole.position[1] + np.cos(decl) * arrow_size
     ax.annotate(f"", xytext=xy1, xy=xy2,
                 arrowprops=dict(arrowstyle="->", linewidth=2, mutation_scale=20))
-    ax.annotate(
-        f"dec {round(dipole.get_declination())}°\n"
-        f"inc {round(dipole.get_inclination())}°\n"
-        f"{round(dipole.get_magnitude())}nT/m",
-        (dipole.position[0] + 0.3, dipole.position[1] + 0.3))
+    # ax.annotate(
+    #     f"dec {round(dipole.get_declination())}°\n"
+    #     f"inc {round(dipole.get_inclination())}°\n"
+    #     f"{round(dipole.get_magnitude())}nT/m",
+    #     (dipole.position[0] + 0.3, dipole.position[1] + 0.3))
+
+    # ax.annotate(
+    #     f"Dipole moment, Dec {round(dipole.get_declination())}°\n",
+    #     (dipole.position[0] + 0.3, dipole.position[1] + 0.3))
     ax.legend()
+
     clb.ax.set_ylabel('nT', fontsize=10, rotation=270)
     st.pyplot(map_fig, use_container_width=False)
     st.pyplot(profile_fig, use_container_width=False)
     # st.pyplot(arrow_fix)
+    st.divider()
+    url = r"https://intermagnet.org/faq/10.geomagnetic-comp"
+    st.markdown("Inc - Inclination defined positive is downward. \n")
+    st.markdown("Dec - Declination defined clockwise from geographic North. \n")
+    st.markdown("Definition aligned with: [common geomagnetic definition](%s)" % url)
+    st.divider()
+    st.markdown("Static examples (taken from [here](%s))" % r"https://www.researchgate.net/publication/292966740_Airborne_Magnetic_Surveys_to_Investigate_High_Temperature_Geothermal_Reservoirs")
+    st.image("mag_image.png")
+
+
+@st.cache_data
+def create_fig():
+    map_fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    return ax, map_fig
 
 
 def plot_profile(line_anomaly, x_survey):
-    profile_fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    profile_fig, ax = plt.subplots(1, 1, figsize=(7, 3))
     ax.plot(x_survey, line_anomaly)
-    ax.axhline(y=0, color='green', linestyle='--')
+    # ax.axhline(y=0, color='red', linestyle='--')
+    ax.hlines(0, xmin=-8, xmax=8, color='red', linestyle='--', label='survey line')
     ax.set_xlabel("Horizontal [m]")
     ax.set_ylabel("Magnetic anomaly [nT]")
+    ax.set_title("Anomaly along survey line")
     return profile_fig
 
 
@@ -119,7 +143,7 @@ CONFIGS = {
 
 def get_input():
     alt = st.sidebar.slider("Distance from anomaly [m]", 0.1, 10.0, 3.0, step=0.01)
-    magnitude = st.sidebar.slider("Anomaly strength [Am2]", 10.0, 100.0, 50.0, step=1.0)
+    magnitude = st.sidebar.slider("Anomaly strength [Am2]", 1.0, 30.0, 10.0, step=0.1)
     m_incl = st.sidebar.slider("Anomaly inclination [°]", -180.0, 180.0, 0.0, step=5.0)
     m_decl = st.sidebar.slider("Anomaly declination [°]", -180.0, 180.0, -45.0, step=5.0)
 
