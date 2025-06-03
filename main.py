@@ -68,7 +68,6 @@ def main():
     vmax = np.percentile(np.abs(grid_anomaly), q)
     im = ax.imshow(grid_anomaly, extent=(xmin, xmax, xmin, xmax),
                    cmap=create_oasis_cmap(),
-                   # cmap='turbo',
                    vmin=vmin, vmax=vmax, interpolation='bicubic')
     ax.hlines(0, xmin=line_xmin, xmax=line_xmax, color='red', linestyle='--', label='survey line')
     ax.set_axis_off()
