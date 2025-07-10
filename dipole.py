@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, Self
+from typing import Iterable, Self, Protocol
 
 import numpy as np
 from numpy import ndarray
@@ -10,6 +10,28 @@ PI4 = 4 * np.pi
 mu0 = 4e-7 * np.pi  # vacuum magnetic permeability
 t2nt = 1e9
 
+
+class MagneticThing(Protocol):
+    def induced_field(self):
+        ...
+    def induced_anomaly(self):
+        ...
+
+@dataclass
+class MagneticPoint:
+    position: ndarray  # length 3
+    susceptibility: float
+
+    def induced_field(self, coordinates: ndarray, vector) -> ndarray:
+        dipole = Dipole(self.position, moment=self.susceptibility * vector)
+        field = compute_mag_field_cartesian_vectorized(dipole, coordinates)
+        return field
+
+    def induced_anomaly(self, coordinates: ndarray, vector) -> ndarray:
+        field = self.induced_field(coordinates, vector).T
+        unit_vector = vector / np.linalg.norm(vector)
+        f_anomaly = np.dot(unit_vector, field) * t2nt
+        return f_anomaly
 
 @dataclass
 class Dipole:
@@ -120,7 +142,7 @@ class Dipole:
         # might be faster in numpy:
         return np.dot(field, np.array(spher2cart(inc, dec)))
 
-    def induced_field(self, coordinates: ndarray, inc: float, dec: float, degrees=False) -> ndarray:
+    def induced_anomaly(self, coordinates: ndarray, inc: float, dec: float, degrees=False) -> ndarray:
         """
         Induced magnetic field
 
@@ -143,6 +165,9 @@ class Dipole:
         field = compute_mag_field_cartesian_vectorized(self, coordinates)
         f_anomaly = self.along_inc_dec(field, inc, dec, degrees) * t2nt
         return f_anomaly
+
+    def induced_field(self, coordinates):
+        return compute_mag_field_cartesian_vectorized(self, coordinates)
 
     def induced_field_along_vector(self, coordinates: ndarray, vector, normalize=False) -> ndarray:
         field = compute_mag_field_cartesian_vectorized(self, coordinates).T
