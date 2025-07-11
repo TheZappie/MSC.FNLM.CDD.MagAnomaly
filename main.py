@@ -2,11 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.legend_handler import HandlerPatch
-from matplotlib.patches import FancyArrow
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from dipole import Dipole, compute_mag_field_cartesian_vectorized, MagneticPoint, MagneticThing
+from dipole import Dipole, MagneticPoint, MagneticThing
 from earths_field import EarthsInducingField
 
 
@@ -34,13 +32,23 @@ def add_north_arrow(ax):
                 arrowprops=dict(arrowstyle="-|>", facecolor="black"))
 
 
-def centered_arrow(ax, angle, pos=(0,0), **kwargs):
-    arrow_size = 1  # map units
+def centered_arrow(ax, angle:float, pos=(0,0), arrow_size:float = 1, degrees=False, text="", linewidth=5, **kwargs):
+    """
+    Angle clockwise from North
+
+    Arrow size in map units
+    https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.arrow.html
+    https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.annotate.html#matplotlib.axes.Axes.annotate
+    """
     x,y = pos
-    xy1 = x + np.sin(angle) * -arrow_size, y + np.cos(angle) * -arrow_size
-    xy2 = x + np.sin(angle) * arrow_size, y + np.cos(angle) * arrow_size
-    ax.annotate(f"", xytext=xy1, xy=xy2,
-                arrowprops=dict(arrowstyle="->", linewidth=5, mutation_scale=20, **kwargs), )
+    if degrees:
+        angle = np.deg2rad(angle)
+    xy_back = x + np.sin(angle) * -arrow_size, y + np.cos(angle) * -arrow_size
+    xy_front = x + np.sin(angle) * arrow_size, y + np.cos(angle) * arrow_size
+    # xy_back = y + np.cos(angle) * -arrow_size, x + np.sin(angle) * -arrow_size
+    # xy_front = y + np.cos(angle) * arrow_size, x + np.sin(angle) * arrow_size
+    arrowprops = dict(arrowstyle="->", linewidth=linewidth, mutation_scale=20, **kwargs)
+    ax.annotate(text, xytext=xy_back, xy=xy_front, arrowprops=arrowprops)
 
 
 def main():
@@ -63,9 +71,6 @@ def main():
         line_anomaly = dipole.induced_anomaly(line_points, earth.inclination, earth.declination)
     else:
         line_anomaly = dipole.induced_anomaly(line_points, earth.vector())
-    profile_fig = plot_profile(line_anomaly, line_axis)
-
-    # arrow_fix, _ = plot_arrow(m_magnitude, m_inc)
 
     xx, yy = np.meshgrid(x_axis, x_axis)
 
@@ -100,29 +105,42 @@ def main():
     clb = map_fig.colorbar(im, cax=cax, orientation='vertical', fraction=0.016)
 
     if isinstance(dipole, Dipole):
-        decl = np.deg2rad(dipole.get_declination())
-        centered_arrow(ax, decl, (dipole.position[0], dipole.position[1]))
+        decl = dipole.get_declination()
+        centered_arrow(ax, decl, (dipole.position[0], dipole.position[1]), degrees=True)
 
-    n_profile = 30
+    n_per_meter = 2
     radius = 3
-
-    y_axis = np.linspace(xmin, xmax, n_profile)
-    z_axis = np.linspace(-5, 10, n_profile)
-    yy, zz = np.meshgrid(y_axis, z_axis)
+    y_n = (xmax - xmin) * n_per_meter
+    z_max = int(np.round(alt)) + 3
+    z_min = z_max-10
+    z_n = (z_max - z_min) * n_per_meter
+    y_axis = np.linspace(xmin, xmax, y_n)
+    z_axis = np.linspace(z_min, z_max, z_n)
+    yy, zz = np.meshgrid(y_axis, z_axis, indexing='ij')
     mask = np.sqrt(yy ** 2 + zz ** 2) > radius  # Keep points outside the circle
+    mask_1d = np.sqrt(y_axis ** 2 + alt ** 2) > radius
 
-    profile_coords = np.vstack([np.full(n_profile**2, 0), yy.ravel(), zz.ravel()]).T.reshape(n_profile, n_profile, 3)
+    profile_coords = np.vstack([np.full(y_n * z_n, 0), yy.ravel(), zz.ravel()]).T.reshape(y_n, z_n, 3)
     if isinstance(dipole, MagneticPoint):
         profile_field = dipole.induced_field(profile_coords, earth.vector())
     else:
         profile_field = dipole.induced_field(profile_coords)
 
-    ax_profile, fig_profile = create_fig()
-    ax_profile.set_axis_off()
-    ax_profile.quiver(yy[mask], zz[mask], profile_field[:,:,1][mask], profile_field[:,:,2][mask], pivot='middle')
+    # ax_profile, fig_profile = create_fig()
+    fig_profile, (ax_plot, ax_profile) =  plt.subplots(2, 1, figsize=(9, 9), sharex=True, height_ratios=(1,3))
+    fig_profile.subplots_adjust(hspace=-0.3)
+    ax_plot.spines['top'].set_visible(False)
+    ax_plot.spines['bottom'].set_visible(False)
+    ax_plot.spines['right'].set_visible(False)
+    ax_plot.spines['left'].set_visible(False)
+    ax_plot.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
+    ax_profile.spines['top'].set_visible(False)
+    ax_profile.spines['right'].set_visible(False)
+    ax_profile.quiver(yy[mask], zz[mask], profile_field[:,:,1][mask], profile_field[:,:,2][mask], pivot='middle')
+    ax_profile.set_aspect('equal')
     yy, zz = np.meshgrid(y_axis, [alt])
-    profile_coords = np.vstack([np.zeros(n_profile), yy.ravel(), zz.ravel()]).T.reshape(n_profile, 1, 3)
+    profile_coords = np.vstack([np.zeros(y_n), yy.ravel(), zz.ravel()]).T.reshape(y_n, 1, 3)
     if isinstance(dipole, MagneticPoint):
         profile_field = dipole.induced_field(profile_coords, earth.vector())
     else:
@@ -132,19 +150,30 @@ def main():
 
     U = profile_anomaly * earth.unit_vector()[1]
     V = profile_anomaly * earth.unit_vector()[2]
-    Q = ax_profile.quiver(yy, zz, profile_field[:,:,1], profile_field[:,:,2], pivot='middle', color='brown')
+
+    Q = ax_profile.quiver(yy[0][mask_1d], zz[0][mask_1d], profile_field[:,:,1][mask_1d], profile_field[:,:,2][mask_1d], pivot='middle', color='brown')
     Q._init()
-    ax_profile.quiver(yy, zz, U, V, pivot='middle', color='red', scale=Q.scale)
+    # values are too low for target declination=90 and earth declination=0
+    ax_profile.quiver(yy[0][mask_1d], zz[0][mask_1d], U[mask_1d], V[mask_1d], pivot='middle', color='red', scale=Q.scale)
 
     if isinstance(dipole, MagneticPoint):
         centered_arrow(ax_profile, earth.inclination + 0.5 * np.pi, color='grey')
     else:
-        centered_arrow(ax_profile, np.deg2rad(dipole.get_inclination()) + 0.5 * np.pi, color='grey')
+        centered_arrow(ax_profile, dipole.get_inclination() + 90, color='grey', degrees=True)
+
+    centered_arrow(ax_profile, earth.inc_deg() + 90, color='red', pos=(-9, alt+1), degrees=True, text=u'B\u2080', linewidth=3)
+
+    ax_profile.set_xlabel("South ←   Horizontal [m]   → North")
+    ax_plot.plot(line_axis, line_anomaly, color='red')
+    ax_plot.hlines(0, xmin=-8, xmax=8, color='blue', linestyle='--', label='survey line')
+    # ax_plot.set_xlabel("Horizontal [m]")
+    ax_plot.set_ylabel("Magnetic anomaly [nT]")
+    ax_plot.set_title("Anomaly along survey line")
 
     clb.ax.set_ylabel('nT', fontsize=10, rotation=270)
     st.pyplot(map_fig, use_container_width=False)
     st.pyplot(fig_profile, use_container_width=False)
-    st.pyplot(profile_fig, use_container_width=False)
+    # st.pyplot(profile_fig, use_container_width=False)
     # st.pyplot(arrow_fix)
     st.divider()
     url = r"https://intermagnet.org/faq/10.geomagnetic-comp"
@@ -152,7 +181,7 @@ def main():
     st.markdown("Dec - Declination defined clockwise from geographic North. \n")
     st.markdown("Definition aligned with: [common geomagnetic definition](%s)" % url)
     st.divider()
-    st.markdown("Static examples (taken from [here](%s))" % r"https://www.researchgate.net/publication/292966740_Airborne_Magnetic_Surveys_to_Investigate_High_Temperature_Geothermal_Reservoirs")
+    st.markdown("Static examples with simple parametric target (taken from [here](%s))" % r"https://www.researchgate.net/publication/292966740_Airborne_Magnetic_Surveys_to_Investigate_High_Temperature_Geothermal_Reservoirs")
     st.image("mag_image.png")
 
 
@@ -189,14 +218,16 @@ def get_input() -> tuple[float, EarthsInducingField, MagneticThing]:
     kind = st.sidebar.selectbox('target type', TARGET_TYPES, index=0)
     position = np.array([0, 0, 0])
     if kind == 'Paramagnetic':
-        dipole = MagneticPoint(position, 1E-5)
+        susceptibility = 1E-4
+        dipole = MagneticPoint(position, susceptibility)
+        st.sidebar.text(f"Assuming magnetic susceptibility: {susceptibility:.1e}")
     else:
         magnitude = st.sidebar.slider("Anomaly strength [Am2]", 1.0, 30.0, 10.0, step=0.1)
-        m_incl = st.sidebar.slider("Anomaly inclination [°]", -180.0, 180.0, 0.0, step=5.0)
+        m_incl = st.sidebar.slider("Anomaly inclination [°]", -90.0, 90.0, 0.0, step=5.0)
         m_decl = st.sidebar.slider("Anomaly declination [°]", -180.0, 180.0, -45.0, step=5.0)
         dipole = Dipole.from_spherical_moment(
             position=position,
-            spherical_moment=np.array([magnitude, m_incl, m_decl]))
+            spherical_moment=[magnitude, m_incl, m_decl], degrees=True)
 
     config = st.sidebar.selectbox('Location', CONFIGS.keys(), index=0)
     lat_default, long_default = CONFIGS[config]

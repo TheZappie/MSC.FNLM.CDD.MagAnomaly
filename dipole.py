@@ -92,7 +92,7 @@ class Dipole:
         return self.get_magnitude(), self.get_inclination(), self.get_declination()
 
     @classmethod
-    def from_spherical_moment(cls, position: ndarray, spherical_moment: ndarray) -> Self:
+    def from_spherical_moment(cls, position: ndarray, spherical_moment, degrees=False) -> Self:
         """
         Create CartesianDipole from spherical moment representation
 
@@ -102,7 +102,6 @@ class Dipole:
             Location in cartesian coordinates [x, y, z]
         spherical_moment: ndarray
             Moment in spherical coordinates [magnitude, inclination, declination]
-            where inclination and declination are in degrees.
             Inclination: positive downward
             Declination geographic definition: Clockwise from geographic North
 
@@ -111,10 +110,8 @@ class Dipole:
         CartesianDipole
         """
 
-        magnitude = spherical_moment[0]
-        inc_rad = np.deg2rad(spherical_moment[1])
-        dec_rad = np.deg2rad(spherical_moment[2])
-        cartesian_moment = magnitude * np.array(spher2cart(inc_rad, dec_rad))
+        magnitude, inc, dec = spherical_moment
+        cartesian_moment = magnitude * np.array(spher2cart(inc, dec, degrees=degrees))
         # noinspection PyTypeChecker
         return cls(position, cartesian_moment)
 
