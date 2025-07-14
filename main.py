@@ -45,15 +45,12 @@ def centered_arrow(ax, angle:float, pos=(0,0), arrow_size:float = 1, degrees=Fal
         angle = np.deg2rad(angle)
     xy_back = x + np.sin(angle) * -arrow_size, y + np.cos(angle) * -arrow_size
     xy_front = x + np.sin(angle) * arrow_size, y + np.cos(angle) * arrow_size
-    # xy_back = y + np.cos(angle) * -arrow_size, x + np.sin(angle) * -arrow_size
-    # xy_front = y + np.cos(angle) * arrow_size, x + np.sin(angle) * arrow_size
     arrowprops = dict(arrowstyle="->", linewidth=linewidth, mutation_scale=20, **kwargs)
     ax.annotate(text, xytext=xy_back, xy=xy_front, arrowprops=arrowprops)
 
 
 def main():
     st.title("3-D Magnetic dipole anomaly Visualizer")
-    # alt, lat, long, magnitude, direction = get_input()
     alt, earth, dipole = get_input()
 
     ax, map_fig = create_fig()
@@ -86,7 +83,6 @@ def main():
     im = ax.imshow(grid_anomaly, extent=(xmin, xmax, xmin, xmax),
                    cmap=create_oasis_cmap(),
                    vmin=vmin, vmax=vmax, interpolation='bicubic')
-    # ax.hlines(0, xmin=line_xmin, xmax=line_xmax, color='red', linestyle='--', label='survey line')
     ax.vlines(0, ymin=line_xmin, ymax=line_xmax, color='red', linestyle='--', label='survey line')
     ax.set_axis_off()
     add_north_arrow(ax)
@@ -151,20 +147,23 @@ def main():
     U = profile_anomaly * earth.unit_vector()[1]
     V = profile_anomaly * earth.unit_vector()[2]
 
-    Q = ax_profile.quiver(yy[0][mask_1d], zz[0][mask_1d], profile_field[:,:,1][mask_1d], profile_field[:,:,2][mask_1d], pivot='middle', color='brown')
+    Q = ax_profile.quiver(yy[0][mask_1d], zz[0][mask_1d], profile_field[:,:,1][mask_1d], profile_field[:,:,2][mask_1d], pivot='middle', color='brown', width=.005)
     Q._init()
     # values are too low for target declination=90 and earth declination=0
-    ax_profile.quiver(yy[0][mask_1d], zz[0][mask_1d], U[mask_1d], V[mask_1d], pivot='middle', color='red', scale=Q.scale)
+    ax_profile.quiver(yy[0][mask_1d][np.where(V[mask_1d]>0)[0]], zz[0][mask_1d][np.where(V[mask_1d]>0)[0]], U[mask_1d][np.where(V[mask_1d]>0)[0]], V[mask_1d][np.where(V[mask_1d]>0)[0]], pivot='middle', color='green', scale=Q.scale)
+    ax_profile.quiver(yy[0][mask_1d][np.where(V[mask_1d]<0)[0]], zz[0][mask_1d][np.where(V[mask_1d]<0)[0]], U[mask_1d][np.where(V[mask_1d]<0)[0]], V[mask_1d][np.where(V[mask_1d]<0)[0]], pivot='middle', color='red', scale=Q.scale)
 
     if isinstance(dipole, MagneticPoint):
         centered_arrow(ax_profile, earth.inclination + 0.5 * np.pi, color='grey')
     else:
-        centered_arrow(ax_profile, dipole.get_inclination() + 90, color='grey', degrees=True)
-
-    centered_arrow(ax_profile, earth.inc_deg() + 90, color='red', pos=(-9, alt+1), degrees=True, text=u'B\u2080', linewidth=3)
+        if -90 < dipole.get_declination() < 90:
+            centered_arrow(ax_profile, dipole.get_inclination() + 90, color='grey', degrees=True)
+        else:
+            centered_arrow(ax_profile, dipole.get_inclination() -90, color='grey', degrees=True)
+    centered_arrow(ax_profile, earth.inc_deg() + 90, color='green', pos=(-9, alt+1), degrees=True, text=u'B\u2080', linewidth=3)
 
     ax_profile.set_xlabel("South ←   Horizontal [m]   → North")
-    ax_plot.plot(line_axis, line_anomaly, color='red')
+    ax_plot.plot(line_axis, line_anomaly, color='green')
     ax_plot.hlines(0, xmin=-8, xmax=8, color='blue', linestyle='--', label='survey line')
     # ax_plot.set_xlabel("Horizontal [m]")
     ax_plot.set_ylabel("Magnetic anomaly [nT]")
@@ -173,8 +172,6 @@ def main():
     clb.ax.set_ylabel('nT', fontsize=10, rotation=270)
     st.pyplot(map_fig, use_container_width=False)
     st.pyplot(fig_profile, use_container_width=False)
-    # st.pyplot(profile_fig, use_container_width=False)
-    # st.pyplot(arrow_fix)
     st.divider()
     url = r"https://intermagnet.org/faq/10.geomagnetic-comp"
     st.markdown("Inc - Inclination defined positive is downward. \n")
@@ -191,37 +188,27 @@ def create_fig():
     return ax, map_fig
 
 
-def plot_profile(line_anomaly, x_survey):
-    profile_fig, ax = plt.subplots(1, 1, figsize=(7, 3))
-    ax.plot(x_survey, line_anomaly)
-    # ax.axhline(y=0, color='red', linestyle='--')
-    ax.hlines(0, xmin=-8, xmax=8, color='red', linestyle='--', label='survey line')
-    ax.set_xlabel("Horizontal [m]")
-    ax.set_ylabel("Magnetic anomaly [nT]")
-    ax.set_title("Anomaly along survey line")
-    return profile_fig
-
-
 CONFIGS = {
     'North Sea': (55.0, 3.0),
     'Equator': (0.0, 0.0),
 }
 
 TARGET_TYPES = {
-    'Paramagnetic',
-    'Complex',
+    'Simple',
+    'Dipole',
 }
 
 def get_input() -> tuple[float, EarthsInducingField, MagneticThing]:
     alt = st.sidebar.slider("Distance from anomaly [m]", 0.1, 10.0, 3.0, step=0.01)
 
-    kind = st.sidebar.selectbox('target type', TARGET_TYPES, index=0)
+    kind = st.sidebar.selectbox('target type', TARGET_TYPES, index=1)
     position = np.array([0, 0, 0])
-    if kind == 'Paramagnetic':
+    if kind == 'Simple':
         susceptibility = 1E-4
         dipole = MagneticPoint(position, susceptibility)
-        st.sidebar.text(f"Assuming magnetic susceptibility: {susceptibility:.1e}")
+        st.sidebar.text(f"Induced magnetism only without preferential axis\nAssuming magnetic susceptibility: {susceptibility:.1e}")
     else:
+        st.sidebar.text(f"Ferromagnetic dipole")
         magnitude = st.sidebar.slider("Anomaly strength [Am2]", 1.0, 30.0, 10.0, step=0.1)
         m_incl = st.sidebar.slider("Anomaly inclination [°]", -90.0, 90.0, 0.0, step=5.0)
         m_decl = st.sidebar.slider("Anomaly declination [°]", -180.0, 180.0, -45.0, step=5.0)
