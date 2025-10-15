@@ -19,6 +19,7 @@ class EarthsInducingField:
     Earth's inducing field from the UK geological survey
     Directions defined here: https://intermagnet.org/faq/10.geomagnetic-comp
     """
+
     inclination: float  # radians, Positive is downward
     declination: float  # radians, Clockwise from geographic North
     strength: float  # nT
@@ -30,9 +31,11 @@ class EarthsInducingField:
         return np.rad2deg(self.declination)
 
     def __str__(self):
-        return (f"Field strength {self.strength:.3f} nT\n"
-                f"inclination {np.rad2deg(self.inclination):.3f}° (Positive is downward)\n"
-                f"declination {np.rad2deg(self.declination):.3f}° (Clockwise from geographic North)")
+        return (
+            f"Field strength {self.strength:.3f} nT\n"
+            f"inclination {np.rad2deg(self.inclination):.3f}° (Positive is downward)\n"
+            f"declination {np.rad2deg(self.declination):.3f}° (Clockwise from geographic North)"
+        )
 
     @classmethod
     def from_coords(cls, lat, lon, date: str | datetime.date = today()):
@@ -57,16 +60,24 @@ class EarthsInducingField:
                 date=str(date),
             )
         except magnetic_field_calculator.ApiError as e:
-            raise RuntimeError(f"Error getting the magnetic model from British Geological Survey via the internet. "
-                               f"Original error message: {e}")
+            raise RuntimeError(
+                f"Error getting the magnetic model from British Geological Survey via the internet. "
+                f"Original error message: {e}"
+            )
 
-        intensity = model['field-value']['total-intensity']['value']  # strength of the Earth's magnetic field
-        dec = model['field-value']['declination']['value']  # declination of the Earth's magnetic field
-        inc = model['field-value']['inclination']['value']  # inclination of the Earth's magnetic field
+        intensity = model["field-value"]["total-intensity"][
+            "value"
+        ]  # strength of the Earth's magnetic field
+        dec = model["field-value"]["declination"][
+            "value"
+        ]  # declination of the Earth's magnetic field
+        inc = model["field-value"]["inclination"][
+            "value"
+        ]  # inclination of the Earth's magnetic field
 
-        return cls(inclination=np.deg2rad(inc),
-                   declination=np.deg2rad(dec),
-                   strength=intensity)
+        return cls(
+            inclination=np.deg2rad(inc), declination=np.deg2rad(dec), strength=intensity
+        )
 
     def vector(self) -> ndarray:
         """
@@ -111,7 +122,7 @@ def spher2cart(inclination, declination, geographic=True, degrees=False):
 
 
 def cart2spher(a, b, c, geographic=True, degrees=False):
-    magnitude = ((a ** 2 + b ** 2 + c ** 2) ** (1 / 2))
+    magnitude = (a**2 + b**2 + c**2) ** (1 / 2)
     if geographic:
         inc = np.arcsin(-c / magnitude)
         dec = np.arctan2(a, b)

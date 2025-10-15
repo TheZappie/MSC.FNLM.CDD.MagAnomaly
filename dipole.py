@@ -12,10 +12,11 @@ t2nt = 1e9
 
 
 class MagneticThing(Protocol):
-    def induced_field(self):
-        ...
-    def induced_anomaly(self):
-        ...
+    def induced_field(self): ...
+    def induced_anomaly(self): ...
+
+    def induced_anomaly_along_vector(self, coordinates: ndarray, vector) -> ndarray: ...
+
 
 @dataclass
 class MagneticPoint:
@@ -27,11 +28,12 @@ class MagneticPoint:
         field = compute_mag_field_cartesian_vectorized(dipole, coordinates)
         return field
 
-    def induced_anomaly(self, coordinates: ndarray, vector) -> ndarray:
+    def induced_anomaly_along_vector(self, coordinates: ndarray, vector) -> ndarray:
         field = self.induced_field(coordinates, vector).T
         unit_vector = vector / np.linalg.norm(vector)
         f_anomaly = np.dot(unit_vector, field) * t2nt
         return f_anomaly
+
 
 @dataclass
 class Dipole:
@@ -44,14 +46,17 @@ class Dipole:
 
     Magnetic moment same directions as coordinates
     """
+
     position: ndarray[3]
     moment: ndarray[3]
 
     def __str__(self):
-        return (f"Position (XYZ): {self.x:.2f}, {self.y:.2f}, {self.z:.2f}\n"
-                f"Magnetic moment magnitude {self.get_magnitude():.3g}\n"
-                f"Inclination {self.get_inclination():.1f}� (Positive is downward)\n"
-                f"Declination {self.get_declination():.1f}� (Clockwise from geographic North)")
+        return (
+            f"Position (XYZ): {self.x:.2f}, {self.y:.2f}, {self.z:.2f}\n"
+            f"Magnetic moment magnitude {self.get_magnitude():.3g}\n"
+            f"Inclination {self.get_inclination():.1f}� (Positive is downward)\n"
+            f"Declination {self.get_declination():.1f}� (Clockwise from geographic North)"
+        )
 
     def is_valid(self):
         return ~np.any(np.isnan(np.hstack([self.position, self.moment])))
@@ -73,9 +78,9 @@ class Dipole:
         return self.position[2]
 
     def get_magnitude(self):
-        return ((self.moment[0] ** 2
-                 + self.moment[1] ** 2
-                 + self.moment[2] ** 2) ** (1 / 2))
+        return (self.moment[0] ** 2 + self.moment[1] ** 2 + self.moment[2] ** 2) ** (
+            1 / 2
+        )
 
     def get_declination(self):
         """Clockwise from geographic North in degrees"""
@@ -92,7 +97,9 @@ class Dipole:
         return self.get_magnitude(), self.get_inclination(), self.get_declination()
 
     @classmethod
-    def from_spherical_moment(cls, position: ndarray, spherical_moment, degrees=False) -> Self:
+    def from_spherical_moment(
+        cls, position: ndarray, spherical_moment, degrees=False
+    ) -> Self:
         """
         Create CartesianDipole from spherical moment representation
 
@@ -115,7 +122,9 @@ class Dipole:
         # noinspection PyTypeChecker
         return cls(position, cartesian_moment)
 
-    def dBdZ(self, coordinates: ndarray, inc: float, dec: float, degrees: bool = False) -> ndarray:
+    def dBdZ(
+        self, coordinates: ndarray, inc: float, dec: float, degrees: bool = False
+    ) -> ndarray:
         """
         Coordinates 1d or 2d. If 2D, first axis required to be size 3.
         """
@@ -139,7 +148,9 @@ class Dipole:
         # might be faster in numpy:
         return np.dot(field, np.array(spher2cart(inc, dec)))
 
-    def induced_anomaly(self, coordinates: ndarray, inc: float, dec: float, degrees=False) -> ndarray:
+    def induced_anomaly(
+        self, coordinates: ndarray, inc: float, dec: float, degrees=False
+    ) -> ndarray:
         """
         Induced magnetic field
 
@@ -166,7 +177,9 @@ class Dipole:
     def induced_field(self, coordinates):
         return compute_mag_field_cartesian_vectorized(self, coordinates)
 
-    def induced_field_along_vector(self, coordinates: ndarray, vector, normalize=False) -> ndarray:
+    def induced_field_along_vector(
+        self, coordinates: ndarray, vector, normalize=False
+    ) -> ndarray:
         field = compute_mag_field_cartesian_vectorized(self, coordinates).T
         if normalize:
             vector = vector / np.linalg.norm(vector)
@@ -174,7 +187,9 @@ class Dipole:
         return f_anomaly
 
 
-def compute_mag_field_cartesian_vectorized(source: Dipole, coordinates: ndarray) -> ndarray:
+def compute_mag_field_cartesian_vectorized(
+    source: Dipole, coordinates: ndarray
+) -> ndarray:
     """
     Vectorized computation of magnetic field in cartesian coordinates
 
@@ -192,10 +207,15 @@ def compute_mag_field_cartesian_vectorized(source: Dipole, coordinates: ndarray)
     """
     # Compute relative positions
     r = coordinates - source.position  # shape: N * 3
-    r2 = np.sum(r ** 2, axis=-1)  # shape: N
+    r2 = np.sum(r**2, axis=-1)  # shape: N
     r5 = np.power(r2, 5 / 2)  # shape: N
     dot = np.dot(r, source.moment)  # shape: N
-    b = mu0 / PI4 * (3 * dot[..., np.newaxis] * r - r2[..., np.newaxis] * source.moment) / r5[..., np.newaxis]
+    b = (
+        mu0
+        / PI4
+        * (3 * dot[..., np.newaxis] * r - r2[..., np.newaxis] * source.moment)
+        / r5[..., np.newaxis]
+    )
     return b
 
 
@@ -210,32 +230,49 @@ def induced_field(sources: Iterable[Dipole], coords, inc, dec, degrees=False):
         return np.zeros(coords.shape[0])
     # precomputing the cartesian vector
     vector = np.array(spher2cart(inc, dec, degrees=degrees))
-    calculated_field = [source.induced_field_along_vector(coords, vector, degrees) for source in sources]
+    calculated_field = [
+        source.induced_field_along_vector(coords, vector, degrees) for source in sources
+    ]
     # calculated_field = [source.induced_field(coords, inc, dec, degrees) for source in sources]
     return np.sum(np.array(calculated_field), axis=0)
 
 
-def induced_field_multiline(sources: Iterable[Dipole], lines: Iterable[ndarray], inc, dec, degrees=False,
-                            xyz_last=True):
+def induced_field_multiline(
+    sources: Iterable[Dipole],
+    lines: Iterable[ndarray],
+    inc,
+    dec,
+    degrees=False,
+    xyz_last=True,
+):
     if xyz_last:
         return [induced_field(sources, coords, inc, dec, degrees) for coords in lines]
     else:
         return [induced_field(sources, coords.T, inc, dec, degrees) for coords in lines]
 
 
-def induced_field_multiline_along_vector(sources: Iterable[Dipole], lines: Iterable[ndarray], vector, normalize=True):
+def induced_field_multiline_along_vector(
+    sources: Iterable[Dipole], lines: Iterable[ndarray], vector, normalize=True
+):
     if normalize:
         vector = vector / np.linalg.norm(vector)
-    return [induced_field_along_vector(sources, coords, vector, normalize=False) for coords in lines]
+    return [
+        induced_field_along_vector(sources, coords, vector, normalize=False)
+        for coords in lines
+    ]
 
 
-def induced_field_along_vector(sources: Iterable[Dipole], coords, vector, normalize=True):
+def induced_field_along_vector(
+    sources: Iterable[Dipole], coords, vector, normalize=True
+):
     """
     Dipole.induced_field for multiple dipoles
     """
     if normalize:
         vector = vector / np.linalg.norm(vector)
 
-    calculated_field = [source.induced_field_along_vector(coords, vector) for source in sources]
+    calculated_field = [
+        source.induced_field_along_vector(coords, vector) for source in sources
+    ]
     # sum contributions from every source
     return np.sum(np.array(calculated_field), axis=0)
