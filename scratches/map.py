@@ -1,3 +1,6 @@
+import pandas as pd
+import streamlit as st
+
 def display_map():
     import pydeck as pdk
     # Default location (New York City)
@@ -41,7 +44,7 @@ def display_map():
             'text': 'Selected Location\nLat: {lat:.4f}\nLon: {lon:.4f}'
         }
     )
-    selection = st.sidebar.pydeck_chart(deck, on_select="rerun")
+    selection = st.pydeck_chart(deck, on_select="rerun")
 
     print(selection)
     if selection and selection.get('objects'):
@@ -53,3 +56,5 @@ def display_map():
                 st.session_state.selected_coords['lon'] = clicked_coords[0]
                 st.session_state.selected_coords['lat'] = clicked_coords[1]
                 st.rerun()
+
+display_map()

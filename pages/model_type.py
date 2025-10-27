@@ -306,7 +306,7 @@ def main():
         "Static examples with simple parametric target (taken from [here](%s))"
         % r"https://www.researchgate.net/publication/292966740_Airborne_Magnetic_Surveys_to_Investigate_High_Temperature_Geothermal_Reservoirs"
     )
-    st.image("mag_image.png")
+    st.image("assets/mag_image.png")
 
 
 @st.cache_data

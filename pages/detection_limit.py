@@ -192,6 +192,13 @@ def main():
     )
     map_ax.scatter(0, 0, marker="x", zorder=10, label="Anomaly position", s=80)
     map_ax.set_aspect("equal")
+    map_ax.text(0.98, 0.98, f"Theoretical Peak-to-peak: {np.max(grid_anomaly) - np.min(grid_anomaly):.2f} nT",
+            transform=map_ax.transAxes,
+            fontsize=10,
+            verticalalignment='top',
+            horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='grey', alpha=0.8, edgecolor='black'))
+
     cax = inset_axes(
         map_ax,
         width="5%",
@@ -301,8 +308,14 @@ def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole, flo
         "Location longitude [°]", -180.0, 180.0, long_default, step=1.0
     )
 
-    first_line, second_line = st.sidebar.slider(
-        "Offset distance line [m]", 0.0, 10.0, (0.0, 2.0), step=0.1
+    # first_line, second_line = st.sidebar.slider(
+    #     "Offset distance line [m]", -10.0, 10.0, (0.0, 2.0), step=0.1
+    # )
+    first_line = st.sidebar.slider(
+        "Offset distance line [m]", -10.0, 10.0, 0.0, step=0.1
+    )
+    second_line = first_line + st.sidebar.slider(
+        "Line spacing [m]", -10.0, 10.0, 2.0, step=0.1
     )
     earths_field = EarthsInducingField.from_coords(lat, long)
 
