@@ -9,4 +9,6 @@ dependencies = [
     "numpy",
     "matplotlib",
     "magnetic_field_calculator",
+    "folium>=0.20.0",
+    "streamlit-folium>=0.25.3",
 ]

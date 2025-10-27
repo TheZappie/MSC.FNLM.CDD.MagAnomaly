@@ -8,6 +8,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from dipole import Dipole, MagneticPoint
 from earths_field import EarthsInducingField
+from map import get_coords_from_map
 
 
 def create_oasis_cmap() -> LinearSegmentedColormap:
@@ -354,13 +355,7 @@ def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole]:
             degrees=True,
         )
 
-    config = st.sidebar.selectbox("Location", CONFIGS.keys(), index=0)
-    lat_default, long_default = CONFIGS[config]
-
-    lat = st.sidebar.slider("Location Latitude [°]", -90.0, 90.0, lat_default, step=1.0)
-    long = st.sidebar.slider(
-        "Location longitude [°]", -180.0, 180.0, long_default, step=1.0
-    )
+    lat, long = get_coords_from_map()
     earths_field = EarthsInducingField.from_coords(lat, long)
 
     return alt, earths_field, dipole

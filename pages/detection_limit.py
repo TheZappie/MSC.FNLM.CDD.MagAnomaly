@@ -6,6 +6,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from dipole import Dipole, MagneticPoint
 from earths_field import EarthsInducingField
+from map import get_coords_from_map
 
 COLOR_2ND_LINE = "limegreen"
 COLOR_1ST_LINE = "green"
@@ -300,13 +301,13 @@ def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole, flo
             degrees=True,
         )
 
-    config = st.sidebar.selectbox("Location", CONFIGS.keys(), index=0)
-    lat_default, long_default = CONFIGS[config]
-
-    lat = st.sidebar.slider("Location Latitude [°]", -90.0, 90.0, lat_default, step=1.0)
-    long = st.sidebar.slider(
-        "Location longitude [°]", -180.0, 180.0, long_default, step=1.0
-    )
+    # config = st.sidebar.selectbox("Location", CONFIGS.keys(), index=0)
+    # lat_default, long_default = CONFIGS[config]
+    #
+    # lat = st.sidebar.slider("Location Latitude [°]", -90.0, 90.0, lat_default, step=1.0)
+    # long = st.sidebar.slider(
+    #     "Location longitude [°]", -180.0, 180.0, long_default, step=1.0
+    # )
 
     # first_line, second_line = st.sidebar.slider(
     #     "Offset distance line [m]", -10.0, 10.0, (0.0, 2.0), step=0.1
@@ -317,6 +318,7 @@ def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole, flo
     second_line = first_line + st.sidebar.slider(
         "Line spacing [m]", -10.0, 10.0, 2.0, step=0.1
     )
+    lat, long = get_coords_from_map()
     earths_field = EarthsInducingField.from_coords(lat, long)
 
     return alt, earths_field, dipole, first_line, second_line
