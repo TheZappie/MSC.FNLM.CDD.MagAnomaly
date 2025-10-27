@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import datetime
 from math import floor
+from typing import Self
 
 import magnetic_field_calculator
 import numpy as np
@@ -38,7 +39,7 @@ class EarthsInducingField:
         )
 
     @classmethod
-    def from_coords(cls, lat, lon, date: str | datetime.date = today()):
+    def from_coords(cls, lat, lon, date: str | datetime.date = today()) -> Self:
         """
         latitude [deg]
         longitude [deg]
