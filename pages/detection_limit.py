@@ -42,14 +42,14 @@ def add_north_arrow(ax):
 
 
 def centered_arrow(
-        ax,
-        angle: float,
-        pos=(0, 0),
-        arrow_size: float = 1,
-        degrees=False,
-        text="",
-        linewidth=5,
-        **kwargs,
+    ax,
+    angle: float,
+    pos=(0, 0),
+    arrow_size: float = 1,
+    degrees=False,
+    text="",
+    linewidth=5,
+    **kwargs,
 ):
     """
     Angle clockwise from North
@@ -66,6 +66,7 @@ def centered_arrow(
     arrowprops = dict(arrowstyle="->", linewidth=linewidth, mutation_scale=20, **kwargs)
     ax.annotate(text, xytext=xy_back, xy=xy_front, arrowprops=arrowprops)
 
+
 def annotate(ax, x_value, y_values):
     # Find maximum and minimum
     max_idx = np.argmax(y_values)
@@ -77,28 +78,31 @@ def annotate(ax, x_value, y_values):
     min_y = y_values[min_idx]
 
     # Plot points at max and min
-    ax.plot(max_x, max_y, 'ro', markersize=8, label='Maximum')
-    ax.plot(min_x, min_y, 'go', markersize=8, label='Minimum')
+    ax.plot(max_x, max_y, "ro", markersize=8, label="Maximum")
+    ax.plot(min_x, min_y, "go", markersize=8, label="Minimum")
 
-    x_diff = (max_x - min_x)
-    y_diff = (max_y - min_y)
+    x_diff = max_x - min_x
+    y_diff = max_y - min_y
     # Annotate maximum
-    ax.annotate(f'{max_y:.2f} nT',
-                xy=(max_x, max_y),
-                xytext=(max_x + 1, max_y + 0.0 * y_diff),
-                fontsize=10,
-                bbox=dict(boxstyle='round,pad=0.5', facecolor='red', alpha=0.3),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color='red'))
+    ax.annotate(
+        f"{max_y:.2f} nT",
+        xy=(max_x, max_y),
+        xytext=(max_x + 1, max_y + 0.0 * y_diff),
+        fontsize=10,
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="red", alpha=0.3),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0", color="red"),
+    )
 
     # Annotate minimum
 
-    ax.annotate(f'{min_y:.2f} nT',
-                xy=(min_x, min_y),
-                xytext=(min_x + 0.15, min_y - 0.15 * y_diff),
-                fontsize=10,
-                bbox=dict(boxstyle='round,pad=0.5', facecolor='green', alpha=0.3),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color='green'))
-
+    ax.annotate(
+        f"{min_y:.2f} nT",
+        xy=(min_x, min_y),
+        xytext=(min_x + 0.15, min_y - 0.15 * y_diff),
+        fontsize=10,
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="green", alpha=0.3),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0", color="green"),
+    )
 
 
 def main():
@@ -116,8 +120,12 @@ def main():
     line_xmin = -8
     line_xmax = 8
     line_axis = np.linspace(line_xmin, line_xmax, n)
-    line1_points = np.vstack([np.full(n, first_line_offset), line_axis, np.full(n, alt)]).T
-    line2_points = np.vstack([np.full(n, second_line_offset), line_axis, np.full(n, alt)]).T
+    line1_points = np.vstack(
+        [np.full(n, first_line_offset), line_axis, np.full(n, alt)]
+    ).T
+    line2_points = np.vstack(
+        [np.full(n, second_line_offset), line_axis, np.full(n, alt)]
+    ).T
     if isinstance(dipole, Dipole):
         line_anomaly1 = dipole.induced_anomaly(
             line1_points, earth.inclination, earth.declination
@@ -126,8 +134,12 @@ def main():
             line2_points, earth.inclination, earth.declination
         )
     elif isinstance(dipole, MagneticPoint):
-        line_anomaly1 = dipole.induced_anomaly_along_vector(line1_points, earth.vector())
-        line_anomaly2 = dipole.induced_anomaly_along_vector(line2_points, earth.vector())
+        line_anomaly1 = dipole.induced_anomaly_along_vector(
+            line1_points, earth.vector()
+        )
+        line_anomaly2 = dipole.induced_anomaly_along_vector(
+            line2_points, earth.vector()
+        )
     else:
         raise
     xx, yy = np.meshgrid(x_axis, x_axis)
@@ -193,12 +205,16 @@ def main():
     )
     map_ax.scatter(0, 0, marker="x", zorder=10, label="Anomaly position", s=80)
     map_ax.set_aspect("equal")
-    map_ax.text(0.98, 0.98, f"Theoretical Peak-to-peak: {np.max(grid_anomaly) - np.min(grid_anomaly):.2f} nT",
-            transform=map_ax.transAxes,
-            fontsize=10,
-            verticalalignment='top',
-            horizontalalignment='right',
-            bbox=dict(boxstyle='round', facecolor='grey', alpha=0.8, edgecolor='black'))
+    map_ax.text(
+        0.98,
+        0.98,
+        f"Theoretical Peak-to-peak: {np.max(grid_anomaly) - np.min(grid_anomaly):.2f} nT",
+        transform=map_ax.transAxes,
+        fontsize=10,
+        verticalalignment="top",
+        horizontalalignment="right",
+        bbox=dict(boxstyle="round", facecolor="grey", alpha=0.8, edgecolor="black"),
+    )
 
     cax = inset_axes(
         map_ax,
@@ -213,9 +229,13 @@ def main():
 
     if isinstance(dipole, Dipole):
         decl = dipole.get_declination()
-        centered_arrow(map_ax, decl, (dipole.position[0], dipole.position[1]), degrees=True)
+        centered_arrow(
+            map_ax, decl, (dipole.position[0], dipole.position[1]), degrees=True
+        )
 
-    fig_profile, ax_plot = plt.subplots(figsize=(9, 3),)
+    fig_profile, ax_plot = plt.subplots(
+        figsize=(9, 3),
+    )
     ax_plot.spines["top"].set_visible(False)
     ax_plot.spines["bottom"].set_visible(False)
     ax_plot.spines["right"].set_visible(False)
@@ -229,20 +249,30 @@ def main():
 
     annotate(ax_plot, line_axis, line_anomaly1)
 
-    ax_plot.text(0.98, 0.98, f"Peak-to-peak: {max(line_anomaly1) - min(line_anomaly1):.2f} nT",
-            transform=ax_plot.transAxes,
-            fontsize=10,
-            verticalalignment='top',
-            horizontalalignment='right',
-            bbox=dict(boxstyle='round', facecolor=COLOR_1ST_LINE, alpha=0.8, edgecolor='black'))
-    ax_plot.text(0.98, 0.85, f"Peak-to-peak: {max(line_anomaly2) - min(line_anomaly2):.2f} nT",
-            transform=ax_plot.transAxes,
-            fontsize=10,
-            verticalalignment='top',
-            horizontalalignment='right',
-            bbox=dict(boxstyle='round', facecolor=COLOR_2ND_LINE, alpha=0.8, edgecolor='black'))
-
-
+    ax_plot.text(
+        0.98,
+        0.98,
+        f"Peak-to-peak: {max(line_anomaly1) - min(line_anomaly1):.2f} nT",
+        transform=ax_plot.transAxes,
+        fontsize=10,
+        verticalalignment="top",
+        horizontalalignment="right",
+        bbox=dict(
+            boxstyle="round", facecolor=COLOR_1ST_LINE, alpha=0.8, edgecolor="black"
+        ),
+    )
+    ax_plot.text(
+        0.98,
+        0.85,
+        f"Peak-to-peak: {max(line_anomaly2) - min(line_anomaly2):.2f} nT",
+        transform=ax_plot.transAxes,
+        fontsize=10,
+        verticalalignment="top",
+        horizontalalignment="right",
+        bbox=dict(
+            boxstyle="round", facecolor=COLOR_2ND_LINE, alpha=0.8, edgecolor="black"
+        ),
+    )
 
     ax_plot.hlines(
         0, xmin=-8, xmax=8, color="blue", linestyle="--", label="survey line"
@@ -253,7 +283,6 @@ def main():
 
     st.pyplot(map_fig, use_container_width=False)
     st.pyplot(fig_profile, use_container_width=False)
-
 
 
 @st.cache_data
@@ -273,7 +302,9 @@ TARGET_TYPES = {
 }
 
 
-def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole, float, float]:
+def get_input() -> tuple[
+    float, EarthsInducingField, MagneticPoint | Dipole, float, float
+]:
     alt = st.sidebar.slider("Distance from anomaly [m]", 0.1, 10.0, 3.0, step=0.01)
 
     kind = st.sidebar.selectbox("target type", TARGET_TYPES, index=1)

@@ -41,14 +41,14 @@ def add_north_arrow(ax):
 
 
 def centered_arrow(
-        ax,
-        angle: float,
-        pos=(0, 0),
-        arrow_size: float = 1,
-        degrees=False,
-        text="",
-        linewidth=5,
-        **kwargs,
+    ax,
+    angle: float,
+    pos=(0, 0),
+    arrow_size: float = 1,
+    degrees=False,
+    text="",
+    linewidth=5,
+    **kwargs,
 ):
     """
     Angle clockwise from North
@@ -176,8 +176,8 @@ def main():
     y_axis = np.linspace(xmin, xmax, y_n)
     z_axis = np.linspace(z_min, z_max, z_n)
     yy, zz = np.meshgrid(y_axis, z_axis, indexing="ij")
-    mask = np.sqrt(yy ** 2 + zz ** 2) > radius  # Keep points outside the circle
-    mask_1d = np.sqrt(y_axis ** 2 + alt ** 2) > radius
+    mask = np.sqrt(yy**2 + zz**2) > radius  # Keep points outside the circle
+    mask_1d = np.sqrt(y_axis**2 + alt**2) > radius
 
     profile_coords = np.vstack(
         [np.full(y_n * z_n, 0), yy.ravel(), zz.ravel()]
@@ -328,7 +328,9 @@ TARGET_TYPES = {
 
 
 def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole]:
-    alt: float = st.sidebar.slider("Distance from anomaly [m]", 0.1, 10.0, 3.0, step=0.01)
+    alt: float = st.sidebar.slider(
+        "Distance from anomaly [m]", 0.1, 10.0, 3.0, step=0.01
+    )
 
     kind = st.sidebar.selectbox("target type", TARGET_TYPES, index=1)
     position = np.array([0, 0, 0])
