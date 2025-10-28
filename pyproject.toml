@@ -1,6 +1,6 @@
 [project]
 name = "msc-fnlm-cdd-maganomaly"
-version = "1.0.0b1"
+version = "2.0.0b2"
 description = "Informative visualization of magnetic dipole anomalies, using Streamlit"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,4 +9,6 @@ dependencies = [
     "numpy",
     "matplotlib",
     "magnetic_field_calculator",
+    "folium>=0.20.0",
+    "streamlit-folium>=0.25.3",
 ]
