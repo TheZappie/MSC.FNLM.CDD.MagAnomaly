@@ -1,5 +1,6 @@
 import streamlit as st
 
+# logging.basicConfig(format="Conversion %(levelname)s: %(message)s", level=logging.WARNING)
 page1 = st.Page("pages/home.py", title="Home", icon=":material/home:")
 page2 = st.Page(
     "pages/detection_limit.py", title="Detection Limit", icon=":material/sensors:"

@@ -304,10 +304,10 @@ def main():
     st.markdown("Definition aligned with: [common geomagnetic definition](%s)" % url)
     st.divider()
     st.markdown(
-        "Static examples with simple parametric target (taken from [here](%s))"
+        "Static examples with 'simple' model (taken from [here](%s))"
         % r"https://www.researchgate.net/publication/292966740_Airborne_Magnetic_Surveys_to_Investigate_High_Temperature_Geothermal_Reservoirs"
     )
-    st.image("assets/mag_image.png")
+    st.image("assets/standard_model.png")
 
 
 @st.cache_data

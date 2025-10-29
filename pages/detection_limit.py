@@ -1,3 +1,5 @@
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
@@ -10,6 +12,8 @@ from map import get_coords_from_map
 
 COLOR_2ND_LINE = "limegreen"
 COLOR_1ST_LINE = "green"
+
+logger = logging.getLogger(__name__)
 
 
 def create_oasis_cmap() -> LinearSegmentedColormap:
@@ -339,6 +343,7 @@ def get_input() -> tuple[
         "Line spacing [m]", -10.0, 10.0, 2.0, step=0.1
     )
     lat, long = get_coords_from_map()
+    logger.info(f"{lat}, {long}")
     earths_field = EarthsInducingField.from_coords(lat, long)
 
     return alt, earths_field, dipole, first_line, second_line
