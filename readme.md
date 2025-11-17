@@ -12,3 +12,5 @@ Test Locally
 Code is formatted with ruff:
 
 ```ruff format```
+
+Hosted at https://fugromaganomaly.streamlit.app/
