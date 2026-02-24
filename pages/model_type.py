@@ -89,10 +89,12 @@ def main():
     line_xmax = 8
     line_axis = np.linspace(line_xmin, line_xmax, n)
     line_points = np.vstack([np.zeros(n), line_axis, np.full(n, alt)]).T
+
     if isinstance(dipole, Dipole):
         line_anomaly = dipole.induced_anomaly(
             line_points, earth.inclination, earth.declination
         )
+
     elif isinstance(dipole, MagneticPoint):
         line_anomaly = dipole.induced_anomaly_along_vector(line_points, earth.vector())
     else:
@@ -250,7 +252,9 @@ def main():
         scale=Q.scale,
         label="Along earth's field",
     )
+
     b = np.where(profile_anomaly < 0)[0]
+    # there is a bug here it doesn't work with altitudes lower than radius
     ax_profile.quiver(
         yy[0][mask_1d][b],
         zz[0][mask_1d][b],
@@ -329,7 +333,7 @@ TARGET_TYPES = {
 
 def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole]:
     alt: float = st.sidebar.slider(
-        "Distance from anomaly [m]", 0.1, 10.0, 3.0, step=0.01
+        "Distance from anomaly [m]", 3.0, 10.0, 3.5, step=0.01
     )
 
     kind = st.sidebar.selectbox("target type", TARGET_TYPES, index=1)
