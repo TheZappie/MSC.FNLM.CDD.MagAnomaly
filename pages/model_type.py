@@ -333,7 +333,7 @@ TARGET_TYPES = {
 
 def get_input() -> tuple[float, EarthsInducingField, MagneticPoint | Dipole]:
     alt: float = st.sidebar.slider(
-        "Distance from anomaly [m]", 3.0, 10.0, 3.5, step=0.01
+        "Distance from anomaly [m]", 3.0, 15.0, 3.5, step=0.01
     )
 
     kind = st.sidebar.selectbox("target type", TARGET_TYPES, index=1)
