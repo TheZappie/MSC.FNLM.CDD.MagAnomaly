@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Survey line editor</title>
+  <style>
+    body { margin: 0; }
+    main { max-width: 700px; padding-bottom: 4px; }
+    svg { display: block; width: 100%; height: auto; }
+    .survey-line { pointer-events: none; stroke-dasharray: 6 4; stroke-width: 3; }
+    .line-target { stroke: transparent; stroke-width: 14; cursor: grab; touch-action: none; }
+    .line-target:hover, .line-target:focus { stroke: #ffffff55; outline: none; }
+    .handle { cursor: grab; touch-action: none; stroke: white; stroke-width: 2; }
+    .rotation { cursor: grab; touch-action: none; }
+    .rotation circle { stroke: white; stroke-width: 2; }
+    .rotation path { fill: none; stroke: white; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+    .rotation:focus { outline: none; }
+    .rotation:focus circle { stroke: black; stroke-width: 3; }
+    .handle:active, .line-target:active, .rotation:active { cursor: grabbing; }
+    .handle:focus { outline: none; stroke: black; stroke-width: 4; }
+    #reset {
+      cursor: pointer; margin: 4px 2px; padding: 5px 12px;
+      font: 14px system-ui, sans-serif; color: #222; background: #fff;
+      border: 1px solid #aaa; border-radius: 6px;
+    }
+  </style>
+  <script src="editor.js?v=2" defer></script>
+</head>
+<body>
+  <main>
+    <svg id="map" aria-label="Magnetic anomaly map with draggable survey lines">
+      <image id="background" pointer-events="none"></image>
+      <g id="lines"></g>
+      <g id="rotations"></g>
+      <g id="handles"></g>
+    </svg>
+    <button id="reset" type="button" disabled>Reset lines</button>
+  </main>
+</body>
+</html>
